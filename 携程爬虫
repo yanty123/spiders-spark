@@ -1,0 +1,108 @@
+import requests
+from bs4 import BeautifulSoup
+import csv
+from multiprocessing import Queue
+
+import  threading
+
+import random
+
+from time import sleep
+import jieba.analyse
+jieba.analyse.set_stop_words("stop.txt")
+User_Agent=["Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.140 Safari/537.36 Edge/17.17134"]
+HEADERS ={
+   'User-Agent':  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.140 Safari/537.36 Edge/17.17134",
+    # 'User-Agent':'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:55.0) Gecko/201002201 Firefox/55.0',
+    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+    'Accept-Language': 'zh-CN,zh;q=0.8,en-US;q=0.5,en;q=0.3',
+    'Accept-Encoding': 'gzip, deflate',
+    'Cookie': '',
+    'Connection': 'keep-alive',
+    'Pragma': 'no-cache',
+    'Cache-Control': 'no-cache'
+}
+
+csvfile = open('co.csv','w',encoding='utf-8', newline='')
+
+writer = csv.writer(csvfile)
+
+writer.writerow(["名称","景点id","评分","地址","介绍","关键词"])
+
+
+def download_page(url):  # 下载页面
+    try:
+        data = requests.get(url, headers=HEADERS, allow_redirects=True).content  # 请求页面，获取要爬取的页面内容
+        return data
+    except:
+        pass
+
+
+def download_soup_waitting(url):
+    try:
+        response = requests.get(url, headers=HEADERS, allow_redirects=False, timeout=5)
+        if response.status_code == 200:
+           html = response.content
+           html = html.decode("utf-8")
+           soup = BeautifulSoup(html, "html.parser")
+           return soup
+        else:
+             sleep(1)
+             print("等待1s")
+             return download_soup_waitting(url)
+    except:
+        return ""
+
+
+def getplaces(url):
+    soup = download_soup_waitting(url)
+    print(soup.title)
+    search_list = soup.find('div', attrs={'class': 'list_wide_mod2'})
+    sight_items = search_list.findAll('div', attrs={'class': 'list_mod2'})
+    for sight_item in sight_items:
+        name_tag = sight_item.find('dt')
+        name=name_tag.find('a',attrs={'target':'_blank'})
+        child_url=name['href']
+        name=name['title']
+        child_url="http://you.ctrip.com"+child_url
+        print(child_url)
+        if(name):
+            print(name)
+        else:
+            continue
+        score_tag=sight_item.find('strong')
+        if(score_tag):
+            score=score_tag.string
+            score=score.strip()
+            print(score)
+        else:
+            score=""
+        address_tag = sight_item.find('dd',attrs={'class':'ellipsis'})
+        if(address_tag):
+            address=address_tag.string
+            address=address.strip()
+            print(address)
+        else:
+            address=""
+        child_soup=download_soup_waitting(child_url)
+        try:
+          intro=child_soup.find('div',attrs={'itemprop':'description'})
+        except:
+           word=""
+        else:
+           strings = intro.stripped_strings
+           word=""
+           for string in strings:
+               word=word+string
+
+        keywrods=jieba.analyse.extract_tags(word,15,withWeight=True)# 关键词 ，tf-if ？ or 分词之后 word2vec
+
+        writer.writerow(
+            [name, "type",score.replace("\n",""),address,word,keywrods])
+
+
+if __name__ == '__main__':
+    for count in range(1,200):
+          next_url = "http://you.ctrip.com/sight/beijing1/s0-p" + str(count) + ".html"
+          print(next_url)
+          getplaces(next_url)
