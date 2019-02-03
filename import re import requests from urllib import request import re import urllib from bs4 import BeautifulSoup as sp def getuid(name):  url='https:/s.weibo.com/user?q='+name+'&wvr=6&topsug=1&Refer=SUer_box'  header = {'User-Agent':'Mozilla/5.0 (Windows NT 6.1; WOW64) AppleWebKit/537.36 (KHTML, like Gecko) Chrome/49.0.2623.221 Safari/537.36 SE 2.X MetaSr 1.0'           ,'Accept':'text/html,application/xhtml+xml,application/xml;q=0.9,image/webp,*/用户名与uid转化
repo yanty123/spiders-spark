@@ -1,0 +1,32 @@
+import re
+import requests
+from urllib import request
+import re
+import urllib
+from bs4 import BeautifulSoup as sp
+
+def getuid(name):
+ url='https://s.weibo.com/user?q='+name+'&wvr=6&topsug=1&Refer=SUer_box'
+
+ header = {'User-Agent':'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/49.0.2623.221 Safari/537.36 SE 2.X MetaSr 1.0'
+          ,'Accept':'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8'
+  }
+ cookie={'cookies':'Ugrow-G0=9642b0b34b4c0d569ed7a372f8823a8e; login_sid_t=46ea11588222f3d3cd80589fdd63ab08; cross_origin_proto=SSL; YF-V5-G0=da1eb9ea7ccc47f9e865137ccb4cf9f3; WBStorage=1dbe672167e426cb|undefined; wb_view_log=1920*10801; _s_tentry=passport.weibo.com; Apache=6866340436257.863.1549204532418; SINAGLOBAL=6866340436257.863.1549204532418; ULV=1549204532519:1:1:1:6866340436257.863.1549204532418:; SSOLoginState=1549204549; SCF=AoxdAt5_EyhZOTJEscTU2iQn4qq3Yoo0GRBFx7oPweI-idevLZa2nbH-WUhpE-apKrXlQutTfxtlzycQQYvWY40.; SUB=_2A25xUowVDeRhGedH7FYX8CbOzD-IHXVSKfrdrDV8PUNbmtB-LUP9kW9NULeMJRL49JYdggygrOa_lDC85p1xptsO; SUBP=0033WrSXqPxfM725Ws9jqgMF55529P9D9W5a-V_JIj.oChvohT19rgJf5JpX5K2hUgL.Fo24S0BcehnES0e2dJLoI0qLxKBLBonL12BLxK-L1KzLBonLxKML1-2L1hBLxKnLBo2L1hqLxKML1KeLBKeLxK.L1h-LBo2t; SUHB=0QS4Fs4Pv-n1aa; ALF=1580740549; un=316506204@qq.com'}
+ req = requests.get(url,timeout=5,  headers=header, cookies=cookie)
+
+ #打开并读取url内信息
+ soup = sp(req.content, 'html.parser')
+
+#利用bs4库解析html
+
+
+ div=soup.find(name='div',id='pl_feed_main')
+ div=div.find(name='div')#m-con-1
+ div=div.find(name='div',class_='info')
+ a=div.find(name='a',class_='name')
+ url=a['href']
+ uid=url[-10:]
+ return uid
+name='不咸的豆瓣酱'
+print(name)
+print(getuid(name))
